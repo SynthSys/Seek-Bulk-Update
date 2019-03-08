@@ -27,9 +27,9 @@ A `main` method is available in the `ed.synthsys.bulk.update.PermissionsSetter` 
     int seekPersonId = 2;
     String policyAccess = "manage";
     String seekType = "person";
-	String userName = "test";
-	String password = "test";
-	SeekRestApiClient apiClient = new SeekRestApiClient("https://fairdomhub.org/", userName, password);
+    String userName = "test";
+    String password = "test";
+    SeekRestApiClient apiClient = new SeekRestApiClient("https://fairdomhub.org/", userName, password);
     /*
     * End of Configuration Properties
     */
