@@ -6,8 +6,11 @@
 package ed.synthsys.seek.bulk.update;
 
 import ed.synthsys.seek.client.SeekRestApiClient;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import ed.synthsys.seek.dom.common.Permission;
+import ed.synthsys.seek.dom.common.Policy;
+import ed.synthsys.seek.dom.common.Resource;
+import ed.synthsys.seek.dom.investigation.Investigation;
+import java.util.List;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -30,15 +33,16 @@ public class PermissionsSetterTest {
     static String userName = "test";
     static String password = "test";
 
-    static int investigationId = 1; // tzielins
+    static int investigationId = 8; // tzielins
 
     // The SEEK ID of the entity that the policy role is being assigned to
     static int seekRelativeId = 2; // tzielins
     static String seekRelativeEntityType = "people";
     static String policyAccess = "manage";
-    
+
+    static SeekRestApiClient apiClient;
     static PermissionsSetter setter;
-    
+
     @BeforeClass
     public static void setUpClass() {
 
@@ -50,7 +54,7 @@ public class PermissionsSetterTest {
     
     @Before
     public void setUp() {
-        SeekRestApiClient apiClient = new SeekRestApiClient(seekURI,
+        apiClient = new SeekRestApiClient(seekURI,
             userName, password);
         setter = new PermissionsSetter(apiClient,
                 seekRelativeId, seekRelativeEntityType);
@@ -61,16 +65,30 @@ public class PermissionsSetterTest {
     }
 
     @Test
-    public void testUpdateISAPermissions() {
-        int exitCode = 0;
-        
-        try {
-            setter.updateISAPermissions(investigationId, policyAccess);
-        } catch (Exception ex) {
-            exitCode = 1;
-            Logger.getLogger(PermissionsSetter.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
+    public void testUpdateISAPermissions() throws Exception {
+
+        setter.updateISAPermissions(investigationId, policyAccess);
+
+        // Verify update was successful
+        Investigation inv = apiClient.getInvestigation(investigationId);
+        Policy policy = inv.getData().getAttributes().getPolicy();
+        assertTrue(verifyPolicyPermissions(policy));
+    }
+
+    private boolean verifyPolicyPermissions(Policy policy) {
+        List<Permission> permissions = policy.getPermissions();
+
+        for(Permission nextPerm: permissions) {
+            Resource resource = nextPerm.getResource();
+            if (resource.getType().equals(seekRelativeEntityType) &&
+                    Integer.parseInt(resource.getId()) == seekRelativeId) {
+
+                if (nextPerm.getAccess().equals(policyAccess)) {
+                    return Boolean.TRUE;
+                }
+            }
         }
-        
-        assertEquals(0, exitCode);
+
+        return Boolean.FALSE;
     }
 }

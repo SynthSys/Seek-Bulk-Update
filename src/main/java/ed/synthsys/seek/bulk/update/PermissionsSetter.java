@@ -19,6 +19,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.ws.rs.core.Response;
 
 /**
@@ -28,8 +30,6 @@ import javax.ws.rs.core.Response;
 public class PermissionsSetter {
    
     SeekRestApiClient API_CLIENT;
-    
-    boolean DEBUG = true;
 
     // The SEEK ID of the investigation (and its children) that the policy is being applied to
 
@@ -49,8 +49,30 @@ public class PermissionsSetter {
         this.seekRelativeId = seekRelativeId;
         this.seekRelativeEntityType = seekRelativeEntityType;
     }
-
     
+    public static void main(String[] args) {
+        int seekPersonId = 2;
+        String policyAccess = "manage";
+        String seekType = "person";
+
+        SeekRestApiClient apiClient = new SeekRestApiClient("https://fairdomhub.org/");
+        int investigationId = 8;
+
+        PermissionsSetter setter = new PermissionsSetter(apiClient,
+                seekPersonId, seekType);
+        int exitCode = 0;
+
+        try {
+            setter.updateISAPermissions(investigationId, policyAccess);
+        } catch (Exception ex) {
+            exitCode = 1;
+            Logger.getLogger(PermissionsSetter.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
+        }
+
+        // Need to exit forcefully to close Hibernate session
+        System.exit(exitCode);
+    }
+
     void updateISAPermissions(int investigationId, String newAccessPolicy)
             throws Exception {
         JSON_MAPPER.configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, true);
