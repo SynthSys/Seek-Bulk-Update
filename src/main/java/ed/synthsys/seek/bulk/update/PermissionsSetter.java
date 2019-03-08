@@ -51,12 +51,20 @@ public class PermissionsSetter {
     }
     
     public static void main(String[] args) {
+        /*
+        * Configuration Properties
+        */
+        int investigationId = 8;
         int seekPersonId = 2;
         String policyAccess = "manage";
         String seekType = "person";
-
-        SeekRestApiClient apiClient = new SeekRestApiClient("https://fairdomhub.org/");
-        int investigationId = 8;
+        String userName = "test";
+        String password = "test";
+        SeekRestApiClient apiClient = new SeekRestApiClient("https://fairdomhub.org/",
+            userName, password);
+        /*
+        * End of Configuration Properties
+        */
 
         PermissionsSetter setter = new PermissionsSetter(apiClient,
                 seekPersonId, seekType);
