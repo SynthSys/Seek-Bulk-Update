@@ -1,27 +1,19 @@
 package ed.synthsys.seek.bulk.update;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import ed.synthsys.seek.client.SeekRestApiClient;
 import ed.synthsys.seek.dom.assay.Assay;
 import ed.synthsys.seek.dom.common.Datum;
 import ed.synthsys.seek.dom.common.Permission;
 import ed.synthsys.seek.dom.common.Policy;
 import ed.synthsys.seek.dom.common.Resource;
-import ed.synthsys.seek.dom.common.SeekRestApiError;
 import ed.synthsys.seek.dom.datafile.DataFile;
 import ed.synthsys.seek.dom.investigation.Investigation;
 import ed.synthsys.seek.dom.modelfile.ModelFile;
 import ed.synthsys.seek.dom.study.Study;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.ws.rs.core.Response;
 
 /**
  *
@@ -30,7 +22,6 @@ import javax.ws.rs.core.Response;
 public class PermissionsSetter {
    
     final SeekRestApiClient API_CLIENT;
-    final ObjectMapper JSON_MAPPER;
 
     // The SEEK ID and type of the entity that the policy role is being assigned to
     int seekRelativeId;
@@ -39,8 +30,6 @@ public class PermissionsSetter {
 
     public PermissionsSetter(SeekRestApiClient client) {
         this.API_CLIENT = client;
-        this.JSON_MAPPER = new ObjectMapper();
-        JSON_MAPPER.configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, true);        
     }
     
     public PermissionsSetter(SeekRestApiClient client, int seekRelativeId, String seekRelativeEntityType) {
@@ -104,18 +93,13 @@ public class PermissionsSetter {
         }
     }
 
-    void updateInvestigationPermissions(int investigationId, Investigation investigation, Permission permission) throws Exception {
+    void updateInvestigationPermissions(int investigationId, Investigation investigation, Permission permission)  {
         Policy curPolicy = investigation.getData().getAttributes().getPolicy();
         curPolicy = updatePolicy(curPolicy, permission);
         
         investigation.getData().getAttributes().setPolicy(curPolicy);
 
-        Response response = API_CLIENT.updateInvestigation(String.valueOf(investigationId), investigation);
-        if(response.getStatus() != 200) {
-            Exception ex = this.getException(response);
-
-            throw(ex);
-        }
+        API_CLIENT.updateInvestigation(investigationId, investigation);
     }
 
     List<Integer> getStudiesForInvestigation(int investigationId) {
@@ -131,19 +115,14 @@ public class PermissionsSetter {
         return studyIds;
     }
 
-    void updateStudyPermissions(Integer studyId, Permission permission, boolean recursive) throws Exception {
+    void updateStudyPermissions(Integer studyId, Permission permission, boolean recursive)  {
         Study study = API_CLIENT.getStudy(studyId);
         Policy curPolicy = study.getData().getAttributes().getPolicy();
         curPolicy = updatePolicy(curPolicy, permission);
         
         study.getData().getAttributes().setPolicy(curPolicy);
 
-        Response response = API_CLIENT.updateStudy(String.valueOf(studyId), study);
-        if(response.getStatus() != 200) {
-            Exception ex = this.getException(response);
-
-            throw(ex);
-        }
+        API_CLIENT.updateStudy(studyId, study);
 
         if (recursive){
             List<Integer> assays = getAssaysForStudy(studyId);
@@ -166,19 +145,14 @@ public class PermissionsSetter {
         return assayIds;
     }
 
-    void updateAssayPermissions(Integer assayId, Permission permission, boolean recursive) throws Exception {
+    void updateAssayPermissions(Integer assayId, Permission permission, boolean recursive) {
         Assay assay = API_CLIENT.getAssay(assayId);
         Policy curPolicy = assay.getData().getAttributes().getPolicy();
         curPolicy = updatePolicy(curPolicy, permission);
         
         assay.getData().getAttributes().setPolicy(curPolicy);
 
-        Response response = API_CLIENT.updateAssay(String.valueOf(assayId), assay);
-        if(response.getStatus() != 200) {
-            Exception ex = this.getException(response);
-
-            throw(ex);
-        }
+        API_CLIENT.updateAssay(assayId, assay);
 
         if (recursive){
             List<Integer> models = getModelsForAssay(assayId);
@@ -193,19 +167,14 @@ public class PermissionsSetter {
         }
     }
     
-    void updateModelPermissions(Integer modelId, Permission permission, boolean recursive) throws Exception {
+    void updateModelPermissions(Integer modelId, Permission permission, boolean recursive) {
         ModelFile model = API_CLIENT.getModelFile(modelId);
         Policy curPolicy = model.getData().getAttributes().getPolicy();
         curPolicy = updatePolicy(curPolicy, permission);
         
         model.getData().getAttributes().setPolicy(curPolicy);
 
-        Response response = API_CLIENT.updateModelFile(String.valueOf(modelId), model);
-        if(response.getStatus() != 200) {
-            Exception ex = this.getException(response);
-
-            throw(ex);
-        }
+        API_CLIENT.updateModelFile(modelId, model);
     }
 
     List<Integer> getModelsForAssay(int assayId) {
@@ -221,19 +190,14 @@ public class PermissionsSetter {
         return modelIds;
     }
 
-    void updateDataFilePermissions(Integer dataFileId, Permission permission, boolean b) throws Exception {
+    void updateDataFilePermissions(Integer dataFileId, Permission permission, boolean b) {
         DataFile dataFile = API_CLIENT.getDataFile(dataFileId);
         Policy curPolicy = dataFile.getData().getAttributes().getPolicy();
         curPolicy = updatePolicy(curPolicy, permission);
         
         dataFile.getData().getAttributes().setPolicy(curPolicy);
 
-        Response response = API_CLIENT.updateDataFile(String.valueOf(dataFileId), dataFile);
-        if(response.getStatus() != 200) {
-            Exception ex = this.getException(response);
-
-            throw(ex);
-        }
+        API_CLIENT.updateDataFile(dataFileId, dataFile);
     }
 
     List<Integer> getDataFilesForAssay(int assayId) {
@@ -251,6 +215,9 @@ public class PermissionsSetter {
 
     private Policy updatePolicy(Policy policy, Permission permission) {
         // Check if permission for this entity exists already
+        if (policy == null) {
+            throw new IllegalStateException("The current policy is null, most likely user has no rights to read policy");
+        }
         List<Permission> permissions = policy.getPermissions();
         
         for(Permission nextPerm: permissions) {
@@ -268,31 +235,4 @@ public class PermissionsSetter {
         return policy;
     }
     
-    private Exception getException(Response response) throws IOException {
-        String errResStr = response.readEntity(String.class);
-
-        Map<String, List<SeekRestApiError>> errResMap = JSON_MAPPER.readValue(errResStr,
-            new TypeReference<Map<String,List<SeekRestApiError>>>(){});
-
-        List<SeekRestApiError> errors = new ArrayList();
-        List<String> errMsgs = new ArrayList();
-
-        Iterator it = errResMap.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry)it.next();
-            List<SeekRestApiError> errsList = (List<SeekRestApiError>)pair.getValue();
-
-            errors.addAll(errsList);
-        }
-
-        for (SeekRestApiError error: errors) {               
-            errMsgs.add(error.getDetail());
-        }
-
-        String exMessage = String.join("; ", errMsgs);
-        
-        Exception ex = new Exception(exMessage);
-        
-        return ex;
-    }
 }

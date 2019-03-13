@@ -17,6 +17,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
+import org.junit.Ignore;
 
 /**
  *
@@ -27,7 +28,7 @@ public class PermissionsSetterTest {
     public PermissionsSetterTest() {
     }
         
-    static String seekURI = "http://seek.test.instance/";
+    static String seekURI = "https://fairdomhub.org/";
     
     // don't commit real username and password
     static String userName = "test";
@@ -54,14 +55,24 @@ public class PermissionsSetterTest {
     
     @Before
     public void setUp() {
-        apiClient = new SeekRestApiClient(seekURI,
-            userName, password);
+        apiClient = new SeekRestApiClient(seekURI, userName, password);
+        //apiClient = new SeekRestApiClient(seekURI);
         setter = new PermissionsSetter(apiClient,
                 seekRelativeId, seekRelativeEntityType);
     }
     
     @After
     public void tearDown() {
+        apiClient.close();
+    }
+    
+    @Test
+    public void setUpWorks() {
+        assertNotNull(apiClient);
+        assertNotNull(setter);
+        
+        Investigation i = apiClient.getInvestigation(investigationId);
+        assertNotNull(i);
     }
 
     @Test
