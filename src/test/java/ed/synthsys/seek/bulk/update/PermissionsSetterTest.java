@@ -27,7 +27,7 @@ public class PermissionsSetterTest {
     public PermissionsSetterTest() {
     }
         
-    static String seekURI = "https://fairdomhub.org/";
+    static String seekURI = "http://seek.test.instance/";
     
     // don't commit real username and password
     static String userName = "test";
@@ -84,11 +84,11 @@ public class PermissionsSetterTest {
                     Integer.parseInt(resource.getId()) == seekRelativeId) {
 
                 if (nextPerm.getAccess().equals(policyAccess)) {
-                    return Boolean.TRUE;
+                    return true;
                 }
             }
         }
 
-        return Boolean.FALSE;
+        return false;
     }
 }

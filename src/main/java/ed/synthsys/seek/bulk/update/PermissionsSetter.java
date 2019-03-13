@@ -29,23 +29,22 @@ import javax.ws.rs.core.Response;
  */
 public class PermissionsSetter {
    
-    SeekRestApiClient API_CLIENT;
-
-    // The SEEK ID of the investigation (and its children) that the policy is being applied to
+    final SeekRestApiClient API_CLIENT;
+    final ObjectMapper JSON_MAPPER;
 
     // The SEEK ID and type of the entity that the policy role is being assigned to
     int seekRelativeId;
     String seekRelativeEntityType;
     
-    ObjectMapper JSON_MAPPER = new ObjectMapper();
 
     public PermissionsSetter(SeekRestApiClient client) {
         this.API_CLIENT = client;
+        this.JSON_MAPPER = new ObjectMapper();
+        JSON_MAPPER.configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, true);        
     }
     
-    public PermissionsSetter(SeekRestApiClient client,
-            int seekRelativeId, String seekRelativeEntityType) {
-        this.API_CLIENT = client;
+    public PermissionsSetter(SeekRestApiClient client, int seekRelativeId, String seekRelativeEntityType) {
+        this(client);
         this.seekRelativeId = seekRelativeId;
         this.seekRelativeEntityType = seekRelativeEntityType;
     }
@@ -68,22 +67,17 @@ public class PermissionsSetter {
 
         PermissionsSetter setter = new PermissionsSetter(apiClient,
                 seekPersonId, seekType);
-        int exitCode = 0;
 
         try {
             setter.updateISAPermissions(investigationId, policyAccess);
         } catch (Exception ex) {
-            exitCode = 1;
             Logger.getLogger(PermissionsSetter.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
         }
 
-        // Need to exit forcefully to close Hibernate session
-        System.exit(exitCode);
     }
 
     void updateISAPermissions(int investigationId, String newAccessPolicy)
             throws Exception {
-        JSON_MAPPER.configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, true);
         
         // Create project-level permissions
         Permission permission = new Permission();
