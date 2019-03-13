@@ -19,7 +19,7 @@ import java.util.logging.Logger;
  *
  * @author Johnny Hay
  */
-public class PermissionsSetter {
+public class PermissionsSetter implements AutoCloseable {
    
     final SeekRestApiClient API_CLIENT;
 
@@ -46,19 +46,22 @@ public class PermissionsSetter {
         int seekPersonId = 2;
         String policyAccess = "manage";
         String seekType = "person";
+        //remember the trailing /
+        String url = "https://fairdomhub.org/";
         String userName = "test";
         String password = "test";
-        SeekRestApiClient apiClient = new SeekRestApiClient("https://fairdomhub.org/",
-            userName, password);
+
         /*
         * End of Configuration Properties
         */
+        
 
-        PermissionsSetter setter = new PermissionsSetter(apiClient,
-                seekPersonId, seekType);
+        try (SeekRestApiClient apiClient = new SeekRestApiClient(url, userName, password)) {
 
-        try {
+            PermissionsSetter setter = new PermissionsSetter(apiClient, seekPersonId, seekType);
+            
             setter.updateISAPermissions(investigationId, policyAccess);
+            
         } catch (Exception ex) {
             Logger.getLogger(PermissionsSetter.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
         }
@@ -233,6 +236,13 @@ public class PermissionsSetter {
         permissions.add(permission);
         policy.setPermissions(permissions);
         return policy;
+    }
+
+    @Override
+    public void close() throws Exception {
+        if (API_CLIENT != null) {
+            API_CLIENT.close();
+        }
     }
     
 }
